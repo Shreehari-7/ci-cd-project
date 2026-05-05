@@ -16,4 +16,8 @@ jobs:
         node-version: '18'
 
     - run: npm install
+    
+    - name: Check Node version
+      run: node -v
+
     - run: node app.js
