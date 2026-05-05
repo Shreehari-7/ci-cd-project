@@ -21,3 +21,5 @@ This project demonstrates the implementation of a CI/CD pipeline for a web appli
 
 ## 🌐 Live Demo
 https://shreehari-7.github.io/ci-cd-project/
+
+![CI](https://github.com/yourusername/cicd-project/actions/workflows/main.yml/badge.svg)
