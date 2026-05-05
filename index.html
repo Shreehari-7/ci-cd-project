@@ -1,9 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CI/CD Project</title>
+    <title>CI/CD Pipeline Project</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .box {
+            margin-top: 100px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 10px 20px;
+            background: blue;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello, CI/CD Project Running!</h1>
+
+<div class="box">
+    <h1>CI/CD Project</h1>
+    <p>Status: Running Successfully ✅</p>
+    <button onclick="showMessage()">Click Me</button>
+</div>
+
+<script>
+function showMessage() {
+    alert("CI/CD Pipeline Working!");
+}
+</script>
+
 </body>
 </html>
