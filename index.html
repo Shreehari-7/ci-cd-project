@@ -4,40 +4,101 @@
     <title>Task Manager</title>
 
     <style>
-        body {
-            font-family: Arial;
-            background: #f4f4f4;
-            text-align: center;
-        }
 
-        .container {
-            width: 400px;
-            margin: auto;
-            margin-top: 50px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        input {
-            padding: 10px;
-            width: 70%;
-        }
+.container {
+    background: white;
+    width: 450px;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
+}
 
-        button {
-            padding: 10px;
-            margin: 5px;
-            cursor: pointer;
-        }
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
 
-        li {
-            list-style: none;
-            margin: 10px;
-            padding: 10px;
-            background: #eee;
-            border-radius: 5px;
-        }
-    </style>
+.input-section {
+    display: flex;
+    gap: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+input:focus {
+    outline: none;
+    border-color: #4facfe;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+.add-btn {
+    background: #4facfe;
+    color: white;
+}
+
+.edit-btn {
+    background: #f39c12;
+    color: white;
+    margin-left: 10px;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    color: white;
+    margin-left: 5px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+li {
+    background: #f7f7f7;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-buttons {
+    display: flex;
+}
+
+</style>
 </head>
 
 <body>
@@ -46,8 +107,15 @@
 
     <h1>Task Manager</h1>
 
-    <input type="text" id="taskInput" placeholder="Enter Task">
-    <button onclick="addTask()">Add</button>
+    <div class="input-section">
+
+    <input type="text" id="taskInput" placeholder="Enter task">
+
+    <button class="add-btn" onclick="addTask()">
+        Add
+    </button>
+
+</div>
 
     <ul id="taskList"></ul>
 
@@ -55,90 +123,90 @@
 
 <script>
 
-async function loadTasks() {
+async function fetchTasks() {
 
-    let res = await fetch('http://localhost:3000/tasks');
-    let tasks = await res.json();
+    const response = await fetch('http://localhost:5000/tasks');
 
-    let list = document.getElementById('taskList');
+    const tasks = await response.json();
 
-    list.innerHTML = "";
+    const taskList = document.getElementById('taskList');
+
+    taskList.innerHTML = '';
 
     tasks.forEach(task => {
 
-        list.innerHTML += `
-        
-        <li>
-            ${task.task}
+        taskList.innerHTML += `
+    <li>
 
-            <button onclick="deleteTask('${task._id}')">
+        <span>${task.task}</span>
+
+        <div class="task-buttons">
+
+            <button class="edit-btn"
+                onclick="editTask('${task._id}', '${task.task}')">
+                Edit
+            </button>
+
+            <button class="delete-btn"
+                onclick="deleteTask('${task._id}')">
                 Delete
             </button>
 
-            <button onclick="updateTask('${task._id}')">
-                Update
-            </button>
+        </div>
 
-        </li>
-        
-        `;
+    </li>
+`;
     });
 }
 
 async function addTask() {
 
-    let task = document.getElementById('taskInput').value;
+    const task = document.getElementById('taskInput').value;
 
-    await fetch('http://localhost:3000/add', {
-
+    await fetch('http://localhost:5000/tasks', {
         method: 'POST',
-
         headers: {
             'Content-Type': 'application/json'
         },
-
         body: JSON.stringify({ task })
-
     });
 
-    document.getElementById('taskInput').value = "";
+    document.getElementById('taskInput').value = '';
 
-    loadTasks();
+    fetchTasks();
 }
-
 async function deleteTask(id) {
 
-    await fetch(`http://localhost:3000/delete/${id}`, {
-
+    await fetch(`http://localhost:5000/tasks/${id}`, {
         method: 'DELETE'
-
     });
 
-    loadTasks();
+    fetchTasks();
+}
+async function editTask(id, oldTask) {
+
+    const newTask = prompt("Edit Task", oldTask);
+
+    if(newTask) {
+
+        await fetch(`http://localhost:5000/tasks/${id}`, {
+
+            method: 'PUT',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+                task: newTask
+            })
+        });
+
+        fetchTasks();
+    }
 }
 
-async function updateTask(id) {
-
-    let updatedTask = prompt("Enter updated task");
-
-    await fetch(`http://localhost:3000/update/${id}`, {
-
-        method: 'PUT',
-
-        headers: {
-            'Content-Type': 'application/json'
-        },
-
-        body: JSON.stringify({
-            task: updatedTask
-        })
-
-    });
-
-    loadTasks();
-}
-
-loadTasks();
+fetchTasks();
 
 </script>
 

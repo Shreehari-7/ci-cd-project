@@ -7,97 +7,52 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB Connection
 mongoose.connect('mongodb://127.0.0.1:27017/taskdb')
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-// Schema
 const TaskSchema = new mongoose.Schema({
     task: String
 });
 
 const Task = mongoose.model('Task', TaskSchema);
 
-// Home Route
-app.get('/', (req, res) => {
-    res.send("Backend Working");
-});
-
-// Get All Tasks
 app.get('/tasks', async (req, res) => {
-    try {
-
-        const tasks = await Task.find();
-
-        res.json(tasks);
-
-    } catch (error) {
-
-        console.log(error);
-
-        res.status(500).send("Error fetching tasks");
-    }
+    const tasks = await Task.find();
+    res.json(tasks);
 });
 
-// Add Task
-app.post('/add', async (req, res) => {
+app.post('/tasks', async (req, res) => {
     try {
-
         const newTask = new Task({
             task: req.body.task
         });
 
         await newTask.save();
 
-        res.send("Task Added");
-
-    } catch (error) {
-
-        console.log(error);
-
-        res.status(500).send("Error adding task");
+        res.json(newTask);
+    } catch (err) {
+        console.log(err);
     }
 });
+app.delete('/tasks/:id', async (req, res) => {
 
-// Delete Task
-app.delete('/delete/:id', async (req, res) => {
-    try {
+    await Task.findByIdAndDelete(req.params.id);
 
-        await Task.findByIdAndDelete(req.params.id);
+    res.json({ message: "Task Deleted" });
 
-        res.send("Task Deleted");
+});
+app.put('/tasks/:id', async (req, res) => {
 
-    } catch (error) {
+    await Task.findByIdAndUpdate(
+        req.params.id,
+        { task: req.body.task }
+    );
 
-        console.log(error);
+    res.json({ message: "Task Updated" });
 
-        res.status(500).send("Error deleting task");
-    }
 });
 
-// Update Task
-app.put('/update/:id', async (req, res) => {
-    try {
-
-        await Task.findByIdAndUpdate(
-            req.params.id,
-            {
-                task: req.body.task
-            }
-        );
-
-        res.send("Task Updated");
-
-    } catch (error) {
-
-        console.log(error);
-
-        res.status(500).send("Error updating task");
-    }
-});
-
-// Start Server
-app.listen(3000, () => {
-    console.log("Server running on port 3000");
+app.listen(5000, () => {
+    console.log("Server running on port 5000");
 });
