@@ -138,21 +138,34 @@ async function fetchTasks() {
         taskList.innerHTML += `
     <li>
 
-        <span>${task.task}</span>
+        <div>
+
+    <strong>${task.task}</strong>
+
+    <br>
+
+    <small>Status: ${task.status}</small>
+
+</div>
 
         <div class="task-buttons">
 
-            <button class="edit-btn"
-                onclick="editTask('${task._id}', '${task.task}')">
-                Edit
-            </button>
+    <button class="edit-btn"
+        onclick="updateStatus('${task._id}')">
+        Status
+    </button>
 
-            <button class="delete-btn"
-                onclick="deleteTask('${task._id}')">
-                Delete
-            </button>
+    <button class="edit-btn"
+        onclick="editTask('${task._id}', '${task.task}')">
+        Edit
+    </button>
 
-        </div>
+    <button class="delete-btn"
+        onclick="deleteTask('${task._id}')">
+        Delete
+    </button>
+
+</div>
 
     </li>
 `;
@@ -204,6 +217,15 @@ async function editTask(id, oldTask) {
 
         fetchTasks();
     }
+}
+async function updateStatus(id) {
+
+    await fetch(`http://localhost:5000/tasks/status/${id}`, {
+
+        method: 'PUT'
+    });
+
+    fetchTasks();
 }
 
 fetchTasks();

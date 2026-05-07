@@ -12,7 +12,14 @@ mongoose.connect('mongodb://127.0.0.1:27017/taskdb')
 .catch(err => console.log(err));
 
 const TaskSchema = new mongoose.Schema({
-    task: String
+
+    task: String,
+
+    status: {
+        type: String,
+        default: "Pending"
+    }
+
 });
 
 const Task = mongoose.model('Task', TaskSchema);
@@ -25,8 +32,12 @@ app.get('/tasks', async (req, res) => {
 app.post('/tasks', async (req, res) => {
     try {
         const newTask = new Task({
-            task: req.body.task
-        });
+
+    task: req.body.task,
+
+    status: "Pending"
+
+});
 
         await newTask.save();
 
@@ -51,6 +62,27 @@ app.put('/tasks/:id', async (req, res) => {
 
     res.json({ message: "Task Updated" });
 
+});
+app.put('/tasks/status/:id', async (req, res) => {
+
+    const task = await Task.findById(req.params.id);
+
+    if(task.status === "Pending") {
+
+        task.status = "In Progress";
+
+    } else if(task.status === "In Progress") {
+
+        task.status = "Completed";
+
+    } else {
+
+        task.status = "Pending";
+    }
+
+    await task.save();
+
+    res.json(task);
 });
 
 app.listen(5000, () => {
