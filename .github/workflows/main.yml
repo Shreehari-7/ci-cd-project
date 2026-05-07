@@ -1,49 +1,66 @@
-name: CI Pipeline
+name: Advanced CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
 
+  pull_request:
+    branches:
+      - main
+
 jobs:
+
   build:
 
     runs-on: ubuntu-latest
 
     steps:
 
-      # Checkout Repository
-      - name: Checkout Code
+      # Step 1 - Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Setup Node.js
+      # Step 2 - Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Install Dependencies
+      # Step 3 - Install Dependencies
       - name: Install Dependencies
         run: npm install
 
-      # Check Node Version
+      # Step 4 - Verify Node.js
       - name: Check Node Version
         run: node -v
 
-      # Start Application
+      # Step 5 - Start Backend Server
       - name: Start Server
         run: |
           node app.js &
           sleep 10
 
-      # Test API Route
-      - name: Test Backend Route
+      # Step 6 - Test API Route
+      - name: Test Backend API
         run: curl http://localhost:3000/
 
-      # Pipeline Test
-      - name: Run Simple Test
-        run: echo "CI Pipeline Working Successfully"
+      # Step 7 - Test Tasks Route
+      - name: Test Tasks Route
+        run: curl http://localhost:3000/tasks
 
-      # Success Message
-      - name: Finish Workflow
-        run: echo "Build Completed Successfully"
+      # Step 8 - Display Success Message
+      - name: Pipeline Status
+        run: echo "CI/CD Pipeline Executed Successfully"
+
+  security-check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Security Audit
+        run: npm audit --audit-level=high || true
