@@ -1,38 +1,146 @@
 <!DOCTYPE html>
 <html>
-<body>
-    <h2>Task Manager</h2>
+<head>
+    <title>Task Manager</title>
 
-    <input id="taskInput" placeholder="Enter task">
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            text-align: center;
+        }
+
+        .container {
+            width: 400px;
+            margin: auto;
+            margin-top: 50px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        input {
+            padding: 10px;
+            width: 70%;
+        }
+
+        button {
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        li {
+            list-style: none;
+            margin: 10px;
+            padding: 10px;
+            background: #eee;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Task Manager</h1>
+
+    <input type="text" id="taskInput" placeholder="Enter Task">
     <button onclick="addTask()">Add</button>
 
     <ul id="taskList"></ul>
 
-<script>
-async function loadTasks() {
-    let res = await fetch('/');
-    let data = await res.json();
+</div>
 
-    let list = document.getElementById("taskList");
+<script>
+
+async function loadTasks() {
+
+    let res = await fetch('http://localhost:3000/tasks');
+    let tasks = await res.json();
+
+    let list = document.getElementById('taskList');
+
     list.innerHTML = "";
 
-    data.forEach((task, index) => {
-        list.innerHTML += `<li>${task} <button onclick="deleteTask(${index})">X</button></li>`;
+    tasks.forEach(task => {
+
+        list.innerHTML += `
+        
+        <li>
+            ${task.task}
+
+            <button onclick="deleteTask('${task._id}')">
+                Delete
+            </button>
+
+            <button onclick="updateTask('${task._id}')">
+                Update
+            </button>
+
+        </li>
+        
+        `;
     });
 }
 
 async function addTask() {
-    let task = document.getElementById("taskInput").value;
-    await fetch('/add', { method: 'POST', body: task });
+
+    let task = document.getElementById('taskInput').value;
+
+    await fetch('http://localhost:3000/add', {
+
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({ task })
+
+    });
+
+    document.getElementById('taskInput').value = "";
+
     loadTasks();
 }
 
-async function deleteTask(index) {
-    await fetch('/delete/' + index, { method: 'DELETE' });
+async function deleteTask(id) {
+
+    await fetch(`http://localhost:3000/delete/${id}`, {
+
+        method: 'DELETE'
+
+    });
+
+    loadTasks();
+}
+
+async function updateTask(id) {
+
+    let updatedTask = prompt("Enter updated task");
+
+    await fetch(`http://localhost:3000/update/${id}`, {
+
+        method: 'PUT',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+            task: updatedTask
+        })
+
+    });
+
     loadTasks();
 }
 
 loadTasks();
+
 </script>
+
 </body>
 </html>

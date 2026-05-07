@@ -1,36 +1,103 @@
-const http = require('http');
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
-let tasks = [];
+const app = express();
 
-const server = http.createServer((req, res) => {
-    if (req.method === 'GET' && req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(tasks));
-    }
+app.use(express.json());
+app.use(cors());
 
-    else if (req.method === 'POST' && req.url === '/add') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk;
-        });
+// MongoDB Connection
+mongoose.connect('mongodb://127.0.0.1:27017/taskdb')
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
 
-        req.on('end', () => {
-            tasks.push(body);
-            res.end("Task Added");
-        });
-    }
+// Schema
+const TaskSchema = new mongoose.Schema({
+    task: String
+});
 
-    else if (req.method === 'DELETE' && req.url.startsWith('/delete')) {
-        const index = parseInt(req.url.split('/')[2]);
-        tasks.splice(index, 1);
-        res.end("Task Deleted");
-    }
+const Task = mongoose.model('Task', TaskSchema);
 
-    else {
-        res.end("Invalid Route");
+// Home Route
+app.get('/', (req, res) => {
+    res.send("Backend Working");
+});
+
+// Get All Tasks
+app.get('/tasks', async (req, res) => {
+    try {
+
+        const tasks = await Task.find();
+
+        res.json(tasks);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).send("Error fetching tasks");
     }
 });
 
-server.listen(3000, () => {
+// Add Task
+app.post('/add', async (req, res) => {
+    try {
+
+        const newTask = new Task({
+            task: req.body.task
+        });
+
+        await newTask.save();
+
+        res.send("Task Added");
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).send("Error adding task");
+    }
+});
+
+// Delete Task
+app.delete('/delete/:id', async (req, res) => {
+    try {
+
+        await Task.findByIdAndDelete(req.params.id);
+
+        res.send("Task Deleted");
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).send("Error deleting task");
+    }
+});
+
+// Update Task
+app.put('/update/:id', async (req, res) => {
+    try {
+
+        await Task.findByIdAndUpdate(
+            req.params.id,
+            {
+                task: req.body.task
+            }
+        );
+
+        res.send("Task Updated");
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).send("Error updating task");
+    }
+});
+
+// Start Server
+app.listen(3000, () => {
     console.log("Server running on port 3000");
 });

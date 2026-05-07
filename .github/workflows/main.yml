@@ -2,25 +2,48 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
 
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      # Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - run: npm install
-    
-    - name: Check Node version
-      run: node -v
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    - run: node app.js
+      # Install Dependencies
+      - name: Install Dependencies
+        run: npm install
 
-    - name: Run simple test
-      run: echo "Testing pipeline successful"
+      # Check Node Version
+      - name: Check Node Version
+        run: node -v
+
+      # Start Application
+      - name: Start Server
+        run: |
+          node app.js &
+          sleep 10
+
+      # Test API Route
+      - name: Test Backend Route
+        run: curl http://localhost:3000/
+
+      # Pipeline Test
+      - name: Run Simple Test
+        run: echo "CI Pipeline Working Successfully"
+
+      # Success Message
+      - name: Finish Workflow
+        run: echo "Build Completed Successfully"
