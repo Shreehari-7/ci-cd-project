@@ -1,104 +1,99 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <title>Task Manager</title>
 
     <style>
 
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to right, #4facfe, #00f2fe);
-    height: 100vh;
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            width: 450px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #4facfe;
+            color: white;
+            cursor: pointer;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            background: #f5f5f5;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        .dashboard {
+
     display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
-.container {
-    background: white;
-    width: 450px;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
-}
+    justify-content: space-between;
 
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-}
+    margin-top: 20px;
 
-.input-section {
-    display: flex;
     gap: 10px;
 }
 
-input {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-}
+.card {
 
-input:focus {
-    outline: none;
-    border-color: #4facfe;
-}
+    background: #f5f5f5;
 
-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: 0.3s;
-}
+    padding: 15px;
 
-button:hover {
-    opacity: 0.8;
-}
-
-.add-btn {
-    background: #4facfe;
-    color: white;
-}
-
-.edit-btn {
-    background: #f39c12;
-    color: white;
-    margin-left: 10px;
-}
-
-.delete-btn {
-    background: #e74c3c;
-    color: white;
-    margin-left: 5px;
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-}
-
-li {
-    background: #f7f7f7;
-    margin-top: 10px;
-    padding: 12px;
     border-radius: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+
+    text-align: center;
+
+    flex: 1;
 }
 
-.task-buttons {
-    display: flex;
+.card h3 {
+
+    margin: 0;
 }
 
-</style>
+    </style>
+
 </head>
 
 <body>
@@ -109,11 +104,31 @@ li {
 
     <div class="input-section">
 
-    <input type="text" id="taskInput" placeholder="Enter task">
+        <input type="text"
+               id="taskInput"
+               placeholder="Enter task">
 
-    <button class="add-btn" onclick="addTask()">
-        Add
-    </button>
+        <button onclick="addTask()">
+            Add
+        </button>
+
+    </div>
+    <div class="dashboard">
+
+    <div class="card">
+        <h3>Total</h3>
+        <p id="totalTasks">0</p>
+    </div>
+
+    <div class="card">
+        <h3>Pending</h3>
+        <p id="pendingTasks">0</p>
+    </div>
+
+    <div class="card">
+        <h3>Completed</h3>
+        <p id="completedTasks">0</p>
+    </div>
 
 </div>
 
@@ -123,52 +138,73 @@ li {
 
 <script>
 
+const userId = "demo_user_1";
+
 async function fetchTasks() {
 
-    const response = await fetch('http://localhost:5000/tasks');
+    const response = await fetch(
+        `http://localhost:5000/tasks/${userId}`
+    );
 
     const tasks = await response.json();
+    const total = tasks.length;
+
+const pending = tasks.filter(
+
+    task => task.status === "Pending"
+
+).length;
+
+const completed = tasks.filter(
+
+    task => task.status === "Completed"
+
+).length;
 
     const taskList = document.getElementById('taskList');
 
     taskList.innerHTML = '';
+    document.getElementById(
+    'totalTasks'
+).innerText = total;
+
+document.getElementById(
+    'pendingTasks'
+).innerText = pending;
+
+document.getElementById(
+    'completedTasks'
+).innerText = completed;
 
     tasks.forEach(task => {
 
         taskList.innerHTML += `
-    <li>
 
-        <div>
+            <li>
 
     <strong>${task.task}</strong>
 
     <br>
 
-    <small>Status: ${task.status}</small>
+    Status: ${task.status}
 
-</div>
+<br><br>
 
-        <div class="task-buttons">
+<button onclick="updateStatus('${task._id}')">
+    Change Status
+</button>
+    <br><br>
 
-    <button class="edit-btn"
-        onclick="updateStatus('${task._id}')">
-        Status
-    </button>
+    <button onclick="editTask('${task._id}', '${task.task}')">
+    Edit
+</button>
 
-    <button class="edit-btn"
-        onclick="editTask('${task._id}', '${task.task}')">
-        Edit
-    </button>
+<button onclick="deleteTask('${task._id}')">
+    Delete
+</button>
 
-    <button class="delete-btn"
-        onclick="deleteTask('${task._id}')">
-        Delete
-    </button>
-
-</div>
-
-    </li>
-`;
+</li>
+        `;
     });
 }
 
@@ -177,11 +213,19 @@ async function addTask() {
     const task = document.getElementById('taskInput').value;
 
     await fetch('http://localhost:5000/tasks', {
+
         method: 'POST',
+
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ task })
+
+        body: JSON.stringify({
+
+            task: task,
+
+            userId: userId
+        })
     });
 
     document.getElementById('taskInput').value = '';
@@ -190,42 +234,62 @@ async function addTask() {
 }
 async function deleteTask(id) {
 
-    await fetch(`http://localhost:5000/tasks/${id}`, {
-        method: 'DELETE'
-    });
+    await fetch(
+
+        `http://localhost:5000/tasks/${id}`,
+
+        {
+            method: 'DELETE'
+        }
+    );
 
     fetchTasks();
 }
 async function editTask(id, oldTask) {
 
-    const newTask = prompt("Edit Task", oldTask);
+    const newTask = prompt(
+
+        "Edit Task",
+
+        oldTask
+    );
 
     if(newTask) {
 
-        await fetch(`http://localhost:5000/tasks/${id}`, {
+        await fetch(
 
-            method: 'PUT',
+            `http://localhost:5000/tasks/${id}`,
 
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            {
 
-            body: JSON.stringify({
-                task: newTask
-            })
-        });
+                method: 'PUT',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify({
+
+                    task: newTask
+                })
+            }
+        );
 
         fetchTasks();
     }
-}
-async function updateStatus(id) {
+    async function updateStatus(id) {
 
-    await fetch(`http://localhost:5000/tasks/status/${id}`, {
+    await fetch(
 
-        method: 'PUT'
-    });
+        `http://localhost:5000/tasks/status/${id}`,
+
+        {
+            method: 'PUT'
+        }
+    );
 
     fetchTasks();
+}
 }
 
 fetchTasks();
