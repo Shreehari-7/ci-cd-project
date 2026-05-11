@@ -1,8 +1,8 @@
-const userId = "demo_user_1";
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -13,8 +13,6 @@ mongoose.connect('mongodb://127.0.0.1:27017/taskdb')
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const TaskSchema = new mongoose.Schema({
 
     task: String,
@@ -24,9 +22,16 @@ const TaskSchema = new mongoose.Schema({
         default: "Pending"
     },
 
-    userId: String
+    userId: String,
 
+    priority: {
+        type: String,
+        default: "Medium"
+    },
+
+    deadline: String
 });
+
 const UserSchema = new mongoose.Schema({
 
     username: String,
@@ -34,11 +39,11 @@ const UserSchema = new mongoose.Schema({
     email: String,
 
     password: String
-
 });
-const User = mongoose.model('User', UserSchema);
 
 const Task = mongoose.model('Task', TaskSchema);
+
+const User = mongoose.model('User', UserSchema);
 
 app.get('/tasks/:userId', async (req, res) => {
 
@@ -48,61 +53,44 @@ app.get('/tasks/:userId', async (req, res) => {
     });
 
     res.json(tasks);
-
 });
 
 app.post('/tasks', async (req, res) => {
+
     try {
+
         const newTask = new Task({
 
-    task: req.body.task,
+            task: req.body.task,
 
-    status: "Pending",
+            status: "Pending",
 
-    userId: req.body.userId
+            userId: req.body.userId,
 
-});
+            priority: req.body.priority,
+
+            deadline: req.body.deadline
+        });
 
         await newTask.save();
 
         res.json(newTask);
-    } catch (err) {
+
+    } catch(err) {
+
         console.log(err);
     }
 });
+
 app.delete('/tasks/:id', async (req, res) => {
 
     await Task.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Task Deleted" });
-
-});
-app.put('/tasks/:id', async (req, res) => {
-
-    await Task.findByIdAndUpdate(
-
-        req.params.id,
-
-        {
-            task: req.body.task
-        }
-    );
-
     res.json({
-        message: "Task Updated"
+        message: "Task Deleted"
     });
-
 });
-app.put('/tasks/:id', async (req, res) => {
 
-    await Task.findByIdAndUpdate(
-        req.params.id,
-        { task: req.body.task }
-    );
-
-    res.json({ message: "Task Updated" });
-
-});
 app.put('/tasks/status/:id', async (req, res) => {
 
     const task = await Task.findById(req.params.id);
@@ -124,11 +112,33 @@ app.put('/tasks/status/:id', async (req, res) => {
 
     res.json(task);
 });
+
+app.put('/tasks/:id', async (req, res) => {
+
+    await Task.findByIdAndUpdate(
+
+        req.params.id,
+
+        {
+            task: req.body.task
+        }
+    );
+
+    res.json({
+        message: "Task Updated"
+    });
+});
+
 app.post('/signup', async (req, res) => {
 
     try {
 
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        const hashedPassword = await bcrypt.hash(
+
+            req.body.password,
+
+            10
+        );
 
         const user = new User({
 
@@ -145,16 +155,18 @@ app.post('/signup', async (req, res) => {
             message: "User Registered Successfully"
         });
 
-    } catch (err) {
+    } catch(err) {
 
         console.log(err);
     }
 });
+
 app.post('/login', async (req, res) => {
 
     try {
 
         const user = await User.findOne({
+
             email: req.body.email
         });
 
@@ -166,7 +178,9 @@ app.post('/login', async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(
+
             req.body.password,
+
             user.password
         );
 
@@ -191,53 +205,13 @@ app.post('/login', async (req, res) => {
             token
         });
 
-    } catch (err) {
+    } catch(err) {
 
         console.log(err);
     }
 });
-app.get('/testsignup', async (req, res) => {
-
-    const hashedPassword = await bcrypt.hash("123456", 10);
-
-    const user = new User({
-
-        username: "Shreehari",
-
-        email: "test@gmail.com",
-
-        password: hashedPassword
-    });
-
-    await user.save();
-
-    res.json({
-        message: "User Registered Successfully"
-    });
-
-});
-app.put('/tasks/status/:id', async (req, res) => {
-
-    const task = await Task.findById(req.params.id);
-
-    if(task.status === "Pending") {
-
-        task.status = "In Progress";
-
-    } else if(task.status === "In Progress") {
-
-        task.status = "Completed";
-
-    } else {
-
-        task.status = "Pending";
-    }
-
-    await task.save();
-
-    res.json(task);
-});
 
 app.listen(5000, () => {
+
     console.log("Server running on port 5000");
 });

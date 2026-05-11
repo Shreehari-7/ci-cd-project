@@ -5,6 +5,8 @@
 
     <title>Task Manager</title>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
 
         body {
@@ -12,7 +14,7 @@
             padding: 0;
             font-family: Arial;
             background: linear-gradient(to right, #4facfe, #00f2fe);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,7 +22,7 @@
 
         .container {
             background: white;
-            width: 450px;
+            width: 600px;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
@@ -32,65 +34,125 @@
 
         .input-section {
             display: flex;
+            flex-direction: column;
             gap: 10px;
         }
 
-        input {
-            flex: 1;
+        input, select {
+
             padding: 12px;
+
             border-radius: 8px;
+
             border: 1px solid #ccc;
         }
 
         button {
-            padding: 10px 15px;
+
+            padding: 10px;
+
             border: none;
+
             border-radius: 8px;
+
             background: #4facfe;
+
             color: white;
+
             cursor: pointer;
+
+            margin-top: 5px;
         }
 
         ul {
+
             list-style: none;
+
             padding: 0;
-            margin-top: 20px;
         }
 
         li {
+
             background: #f5f5f5;
-            padding: 10px;
+
+            padding: 15px;
+
             margin-top: 10px;
-            border-radius: 8px;
+
+            border-radius: 10px;
         }
+
         .dashboard {
 
-    display: flex;
+            display: flex;
 
-    justify-content: space-between;
+            justify-content: space-between;
 
-    margin-top: 20px;
+            gap: 10px;
 
-    gap: 10px;
-}
+            margin-top: 20px;
+        }
 
-.card {
+        .card {
 
-    background: #f5f5f5;
+            background: #f5f5f5;
 
-    padding: 15px;
+            padding: 15px;
 
-    border-radius: 10px;
+            flex: 1;
 
-    text-align: center;
+            text-align: center;
 
-    flex: 1;
-}
+            border-radius: 10px;
+        }
 
-.card h3 {
+        .progress-container {
 
-    margin: 0;
-}
+            width: 100%;
+
+            height: 25px;
+
+            background: #ddd;
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+            margin-top: 20px;
+        }
+
+        #progressBar {
+
+            height: 100%;
+
+            width: 0%;
+
+            background: #2ecc71;
+        }
+
+        #progressText {
+
+            text-align: center;
+
+            font-weight: bold;
+        }
+
+        .dark-mode {
+
+            background: #121212;
+
+            color: white;
+        }
+
+        .dark-mode .container {
+
+            background: #1e1e1e;
+        }
+
+        .dark-mode li {
+
+            background: #2c2c2c;
+        }
 
     </style>
 
@@ -102,35 +164,72 @@
 
     <h1>Task Manager</h1>
 
+    <button onclick="toggleDarkMode()">
+        Dark Mode
+    </button>
+
     <div class="input-section">
 
         <input type="text"
                id="taskInput"
                placeholder="Enter task">
 
+        <select id="priority">
+
+            <option>High</option>
+
+            <option selected>Medium</option>
+
+            <option>Low</option>
+
+        </select>
+
+        <input type="date"
+               id="deadline">
+
         <button onclick="addTask()">
             Add
         </button>
 
     </div>
+
     <div class="dashboard">
 
-    <div class="card">
-        <h3>Total</h3>
-        <p id="totalTasks">0</p>
+        <div class="card">
+
+            <h3>Total</h3>
+
+            <p id="totalTasks">0</p>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Pending</h3>
+
+            <p id="pendingTasks">0</p>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Completed</h3>
+
+            <p id="completedTasks">0</p>
+
+        </div>
+
     </div>
 
-    <div class="card">
-        <h3>Pending</h3>
-        <p id="pendingTasks">0</p>
+    <canvas id="taskChart"></canvas>
+
+    <div class="progress-container">
+
+        <div id="progressBar"></div>
+
     </div>
 
-    <div class="card">
-        <h3>Completed</h3>
-        <p id="completedTasks">0</p>
-    </div>
-
-</div>
+    <p id="progressText"></p>
 
     <ul id="taskList"></ul>
 
@@ -140,98 +239,228 @@
 
 const userId = "demo_user_1";
 
+let taskChart;
+
 async function fetchTasks() {
 
     const response = await fetch(
+
         `http://localhost:5000/tasks/${userId}`
     );
 
     const tasks = await response.json();
+
     const total = tasks.length;
 
-const pending = tasks.filter(
+    const pending = tasks.filter(
 
-    task => task.status === "Pending"
+        task => task.status === "Pending"
 
-).length;
+    ).length;
 
-const completed = tasks.filter(
+    const completed = tasks.filter(
 
-    task => task.status === "Completed"
+        task => task.status === "Completed"
 
-).length;
+    ).length;
 
-    const taskList = document.getElementById('taskList');
+    const inProgress = tasks.filter(
+
+        task => task.status === "In Progress"
+
+    ).length;
+
+    const progress = total > 0
+
+        ? Math.round((completed / total) * 100)
+
+        : 0;
+
+    document.getElementById(
+        'totalTasks'
+    ).innerText = total;
+
+    document.getElementById(
+        'pendingTasks'
+    ).innerText = pending;
+
+    document.getElementById(
+        'completedTasks'
+    ).innerText = completed;
+
+    document.getElementById(
+        'progressBar'
+    ).style.width = `${progress}%`;
+
+    document.getElementById(
+        'progressText'
+    ).innerText =
+        `${progress}% Tasks Completed`;
+
+    const ctx =
+        document.getElementById('taskChart');
+
+    if(taskChart) {
+
+        taskChart.destroy();
+    }
+
+    taskChart = new Chart(ctx, {
+
+        type: 'pie',
+
+        data: {
+
+            labels: [
+
+                'Pending',
+
+                'Completed',
+
+                'In Progress'
+            ],
+
+            datasets: [{
+
+                data: [
+
+                    pending,
+
+                    completed,
+
+                    inProgress
+                ],
+
+                backgroundColor: [
+
+                    '#f39c12',
+
+                    '#2ecc71',
+
+                    '#3498db'
+                ]
+            }]
+        }
+    });
+
+    const taskList =
+        document.getElementById('taskList');
 
     taskList.innerHTML = '';
-    document.getElementById(
-    'totalTasks'
-).innerText = total;
-
-document.getElementById(
-    'pendingTasks'
-).innerText = pending;
-
-document.getElementById(
-    'completedTasks'
-).innerText = completed;
 
     tasks.forEach(task => {
+
+        const today = new Date()
+
+            .toISOString()
+
+            .split('T')[0];
+
+        const overdue =
+
+            task.deadline < today
+
+            && task.status !== "Completed";
 
         taskList.innerHTML += `
 
             <li>
 
-    <strong>${task.task}</strong>
+                <strong>${task.task}</strong>
 
-    <br>
+                <br>
 
-    Status: ${task.status}
+                Status: ${task.status}
 
-<br><br>
+                <br>
 
-<button onclick="updateStatus('${task._id}')">
-    Change Status
-</button>
-    <br><br>
+                Priority: ${task.priority}
 
-    <button onclick="editTask('${task._id}', '${task.task}')">
-    Edit
-</button>
+                <br>
 
-<button onclick="deleteTask('${task._id}')">
-    Delete
-</button>
+                Deadline: ${task.deadline}
 
-</li>
+                <br>
+
+                ${overdue
+                    ? '<span style="color:red;">Overdue</span>'
+                    : ''
+                }
+
+                <br><br>
+
+                <button onclick="updateStatus('${task._id}')">
+
+                    Change Status
+
+                </button>
+
+                <button onclick="editTask(
+
+                    '${task._id}',
+
+                    '${task.task}'
+
+                )">
+
+                    Edit
+
+                </button>
+
+                <button onclick="deleteTask('${task._id}')">
+
+                    Delete
+
+                </button>
+
+            </li>
         `;
     });
 }
 
 async function addTask() {
 
-    const task = document.getElementById('taskInput').value;
+    const task =
+        document.getElementById('taskInput').value;
 
-    await fetch('http://localhost:5000/tasks', {
+    const priority =
+        document.getElementById('priority').value;
 
-        method: 'POST',
+    const deadline =
+        document.getElementById('deadline').value;
 
-        headers: {
-            'Content-Type': 'application/json'
-        },
+    await fetch(
 
-        body: JSON.stringify({
+        'http://localhost:5000/tasks',
 
-            task: task,
+        {
 
-            userId: userId
-        })
-    });
+            method: 'POST',
 
-    document.getElementById('taskInput').value = '';
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+
+                task: task,
+
+                userId: userId,
+
+                priority: priority,
+
+                deadline: deadline
+            })
+        }
+    );
+
+    document.getElementById(
+        'taskInput'
+    ).value = '';
 
     fetchTasks();
 }
+
 async function deleteTask(id) {
 
     await fetch(
@@ -245,6 +474,7 @@ async function deleteTask(id) {
 
     fetchTasks();
 }
+
 async function editTask(id, oldTask) {
 
     const newTask = prompt(
@@ -277,7 +507,9 @@ async function editTask(id, oldTask) {
 
         fetchTasks();
     }
-    async function updateStatus(id) {
+}
+
+async function updateStatus(id) {
 
     await fetch(
 
@@ -290,6 +522,12 @@ async function editTask(id, oldTask) {
 
     fetchTasks();
 }
+
+function toggleDarkMode() {
+
+    document.body.classList.toggle(
+        'dark-mode'
+    );
 }
 
 fetchTasks();
