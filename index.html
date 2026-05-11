@@ -1,3 +1,7 @@
+<!-- ==========================
+FULL UPDATED index.html
+========================== -->
+
 <!DOCTYPE html>
 <html>
 
@@ -10,13 +14,25 @@
     <style>
 
         body {
+
             margin: 0;
+
             padding: 0;
+
             font-family: Arial;
-            background: linear-gradient(to right, #4facfe, #00f2fe);
+
+            background: linear-gradient(
+                to right,
+                #4facfe,
+                #00f2fe
+            );
+
             min-height: 100vh;
+
             display: flex;
+
             justify-content: center;
+
             align-items: center;
         }
 
@@ -24,7 +40,7 @@
 
             background: white;
 
-            width: 650px;
+            width: 700px;
 
             padding: 30px;
 
@@ -33,23 +49,13 @@
             box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
         }
 
-        h1, h2 {
+        input, select, button {
 
-            text-align: center;
-        }
-
-        .input-section {
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 10px;
-        }
-
-        input, select {
+            width: 100%;
 
             padding: 12px;
+
+            margin-top: 10px;
 
             border-radius: 8px;
 
@@ -58,19 +64,13 @@
 
         button {
 
-            padding: 10px;
-
-            border: none;
-
-            border-radius: 8px;
-
             background: #4facfe;
 
             color: white;
 
-            cursor: pointer;
+            border: none;
 
-            margin-top: 5px;
+            cursor: pointer;
         }
 
         ul {
@@ -97,22 +97,24 @@
 
             justify-content: space-between;
 
-            gap: 10px;
-
             margin-top: 20px;
         }
 
-        .card {
+        .dark-mode {
 
-            background: #f5f5f5;
+            background: #121212;
 
-            padding: 15px;
+            color: white;
+        }
 
-            flex: 1;
+        .dark-mode .container {
 
-            text-align: center;
+            background: #1e1e1e;
+        }
 
-            border-radius: 10px;
+        .dark-mode li {
+
+            background: #2c2c2c;
         }
 
         .progress-container {
@@ -137,35 +139,6 @@
             width: 0%;
 
             background: #2ecc71;
-        }
-
-        #progressText {
-
-            text-align: center;
-
-            font-weight: bold;
-        }
-
-        .dark-mode {
-
-            background: #121212;
-
-            color: white;
-        }
-
-        .dark-mode .container {
-
-            background: #1e1e1e;
-        }
-
-        .dark-mode li {
-
-            background: #2c2c2c;
-        }
-
-        hr {
-
-            margin: 20px 0;
         }
 
     </style>
@@ -222,55 +195,42 @@
         Dark Mode
     </button>
 
-    <div class="input-section">
+    <input type="text"
+           id="taskInput"
+           placeholder="Enter task">
 
-        <input type="text"
-               id="taskInput"
-               placeholder="Enter task">
+    <select id="priority">
 
-        <select id="priority">
+        <option>High</option>
 
-            <option>High</option>
+        <option selected>Medium</option>
 
-            <option selected>Medium</option>
+        <option>Low</option>
 
-            <option>Low</option>
+    </select>
 
-        </select>
+    <input type="date"
+           id="deadline">
 
-        <input type="date"
-               id="deadline">
-
-        <button onclick="addTask()">
-            Add
-        </button>
-
-    </div>
+    <button onclick="addTask()">
+        Add Task
+    </button>
 
     <div class="dashboard">
 
-        <div class="card">
-
-            <h3>Total</h3>
-
-            <p id="totalTasks">0</p>
-
+        <div>
+            Total:
+            <span id="totalTasks">0</span>
         </div>
 
-        <div class="card">
-
-            <h3>Pending</h3>
-
-            <p id="pendingTasks">0</p>
-
+        <div>
+            Pending:
+            <span id="pendingTasks">0</span>
         </div>
 
-        <div class="card">
-
-            <h3>Completed</h3>
-
-            <p id="completedTasks">0</p>
-
+        <div>
+            Completed:
+            <span id="completedTasks">0</span>
         </div>
 
     </div>
@@ -287,16 +247,42 @@
 
     <ul id="taskList"></ul>
 
+    <hr>
+
+    <h2>Admin Dashboard</h2>
+
+    <button onclick="loadAdminData()">
+        Load Admin Data
+    </button>
+
+    <h3>Total Users</h3>
+
+    <p id="adminUsersCount">0</p>
+
+    <ul id="adminUsers"></ul>
+
+    <h3>All Tasks</h3>
+
+    <ul id="adminTasks"></ul>
+
 </div>
+
+<script src="http://localhost:5000/socket.io/socket.io.js"></script>
 
 <script>
 
+const socket = io('http://localhost:5000');
+
 const userId = "demo_user_1";
 
-const token =
-    localStorage.getItem('token');
+const token = localStorage.getItem('token');
 
 let taskChart;
+
+socket.on('taskUpdated', () => {
+
+    fetchTasks();
+});
 
 async function signup() {
 
@@ -381,27 +367,19 @@ async function login() {
     if(data.token) {
 
         localStorage.setItem(
-
             'token',
-
             data.token
         );
 
         alert("Login Successful");
 
         location.reload();
-
-    } else {
-
-        alert(data.message);
     }
 }
 
 function logout() {
 
     localStorage.removeItem('token');
-
-    alert("Logged Out");
 
     location.reload();
 }
@@ -417,7 +395,6 @@ async function fetchTasks() {
         {
 
             headers: {
-
                 authorization: token
             }
         }
@@ -436,12 +413,6 @@ async function fetchTasks() {
     const completed = tasks.filter(
 
         task => task.status === "Completed"
-
-    ).length;
-
-    const inProgress = tasks.filter(
-
-        task => task.status === "In Progress"
 
     ).length;
 
@@ -472,70 +443,12 @@ async function fetchTasks() {
     ).innerText =
         `${progress}% Tasks Completed`;
 
-    const ctx =
-        document.getElementById('taskChart');
-
-    if(taskChart) {
-
-        taskChart.destroy();
-    }
-
-    taskChart = new Chart(ctx, {
-
-        type: 'pie',
-
-        data: {
-
-            labels: [
-
-                'Pending',
-
-                'Completed',
-
-                'In Progress'
-            ],
-
-            datasets: [{
-
-                data: [
-
-                    pending,
-
-                    completed,
-
-                    inProgress
-                ],
-
-                backgroundColor: [
-
-                    '#f39c12',
-
-                    '#2ecc71',
-
-                    '#3498db'
-                ]
-            }]
-        }
-    });
-
     const taskList =
         document.getElementById('taskList');
 
     taskList.innerHTML = '';
 
     tasks.forEach(task => {
-
-        const today = new Date()
-
-            .toISOString()
-
-            .split('T')[0];
-
-        const overdue =
-
-            task.deadline < today
-
-            && task.status !== "Completed";
 
         taskList.innerHTML += `
 
@@ -545,47 +458,28 @@ async function fetchTasks() {
 
                 <br>
 
-                Status: ${task.status}
+                ${task.status}
 
                 <br>
 
-                Priority: ${task.priority}
+                ${task.priority}
 
                 <br>
 
-                Deadline: ${task.deadline}
-
-                <br>
-
-                ${overdue
-                    ? '<span style="color:red;">Overdue</span>'
-                    : ''
-                }
+                ${task.deadline}
 
                 <br><br>
 
                 <button onclick="updateStatus('${task._id}')">
-
-                    Change Status
-
+                    Status
                 </button>
 
-                <button onclick="editTask(
-
-                    '${task._id}',
-
-                    '${task.task}'
-
-                )">
-
+                <button onclick="editTask('${task._id}', '${task.task}')">
                     Edit
-
                 </button>
 
                 <button onclick="deleteTask('${task._id}')">
-
                     Delete
-
                 </button>
 
             </li>
@@ -621,22 +515,16 @@ async function addTask() {
 
             body: JSON.stringify({
 
-                task: task,
+                task,
 
-                userId: userId,
+                userId,
 
-                priority: priority,
+                priority,
 
-                deadline: deadline
+                deadline
             })
         }
     );
-
-    document.getElementById(
-        'taskInput'
-    ).value = '';
-
-    fetchTasks();
 }
 
 async function deleteTask(id) {
@@ -650,50 +538,40 @@ async function deleteTask(id) {
             method: 'DELETE',
 
             headers: {
-
                 authorization: token
             }
         }
     );
-
-    fetchTasks();
 }
 
 async function editTask(id, oldTask) {
 
     const newTask = prompt(
-
         "Edit Task",
-
         oldTask
     );
 
-    if(newTask) {
+    await fetch(
 
-        await fetch(
+        `http://localhost:5000/tasks/${id}`,
 
-            `http://localhost:5000/tasks/${id}`,
+        {
 
-            {
+            method: 'PUT',
 
-                method: 'PUT',
+            headers: {
 
-                headers: {
+                'Content-Type': 'application/json',
 
-                    'Content-Type': 'application/json',
+                authorization: token
+            },
 
-                    authorization: token
-                },
+            body: JSON.stringify({
 
-                body: JSON.stringify({
-
-                    task: newTask
-                })
-            }
-        );
-
-        fetchTasks();
-    }
+                task: newTask
+            })
+        }
+    );
 }
 
 async function updateStatus(id) {
@@ -707,13 +585,79 @@ async function updateStatus(id) {
             method: 'PUT',
 
             headers: {
+                authorization: token
+            }
+        }
+    );
+}
 
+async function loadAdminData() {
+
+    const usersResponse = await fetch(
+
+        'http://localhost:5000/admin/users',
+
+        {
+
+            headers: {
                 authorization: token
             }
         }
     );
 
-    fetchTasks();
+    const users = await usersResponse.json();
+
+    document.getElementById(
+        'adminUsersCount'
+    ).innerText = users.length;
+
+    const adminUsers =
+        document.getElementById('adminUsers');
+
+    adminUsers.innerHTML = '';
+
+    users.forEach(user => {
+
+        adminUsers.innerHTML += `
+
+            <li>
+
+                ${user.username} - ${user.role}
+
+            </li>
+        `;
+    });
+
+    const tasksResponse = await fetch(
+
+        'http://localhost:5000/admin/tasks',
+
+        {
+
+            headers: {
+                authorization: token
+            }
+        }
+    );
+
+    const tasks = await tasksResponse.json();
+
+    const adminTasks =
+        document.getElementById('adminTasks');
+
+    adminTasks.innerHTML = '';
+
+    tasks.forEach(task => {
+
+        adminTasks.innerHTML += `
+
+            <li>
+
+                ${task.task} - ${task.status}
+
+            </li>
+        `;
+    });
 }
 
 function toggleDarkMode() {

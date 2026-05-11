@@ -1,16 +1,34 @@
+// ==========================
+// FULL UPDATED app.js
+// ==========================
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+
+const { Server } = require('socket.io');
 
 const app = express();
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+
+    cors: {
+        origin: "*"
+    }
+});
 
 app.use(express.json());
 app.use(cors());
 
 mongoose.connect('mongodb://127.0.0.1:27017/taskdb')
+
 .then(() => console.log("MongoDB Connected"))
+
 .catch(err => console.log(err));
 
 const TaskSchema = new mongoose.Schema({
@@ -18,14 +36,18 @@ const TaskSchema = new mongoose.Schema({
     task: String,
 
     status: {
+
         type: String,
+
         default: "Pending"
     },
 
     userId: String,
 
     priority: {
+
         type: String,
+
         default: "Medium"
     },
 
@@ -38,7 +60,14 @@ const UserSchema = new mongoose.Schema({
 
     email: String,
 
-    password: String
+    password: String,
+
+    role: {
+
+        type: String,
+
+        default: "user"
+    }
 });
 
 const Task = mongoose.model('Task', TaskSchema);
@@ -47,8 +76,7 @@ const User = mongoose.model('User', UserSchema);
 
 function auth(req, res, next) {
 
-    const token =
-        req.headers.authorization;
+    const token = req.headers.authorization;
 
     if(!token) {
 
@@ -80,6 +108,19 @@ function auth(req, res, next) {
     }
 }
 
+function adminOnly(req, res, next) {
+
+    if(req.user.role !== "admin") {
+
+        return res.status(403).json({
+
+            message: "Admin Access Only"
+        });
+    }
+
+    next();
+}
+
 app.get('/tasks/:userId', auth, async (req, res) => {
 
     const tasks = await Task.find({
@@ -92,36 +133,34 @@ app.get('/tasks/:userId', auth, async (req, res) => {
 
 app.post('/tasks', auth, async (req, res) => {
 
-    try {
+    const newTask = new Task({
 
-        const newTask = new Task({
+        task: req.body.task,
 
-            task: req.body.task,
+        status: "Pending",
 
-            status: "Pending",
+        userId: req.body.userId,
 
-            userId: req.body.userId,
+        priority: req.body.priority,
 
-            priority: req.body.priority,
+        deadline: req.body.deadline
+    });
 
-            deadline: req.body.deadline
-        });
+    await newTask.save();
 
-        await newTask.save();
+    io.emit('taskUpdated');
 
-        res.json(newTask);
-
-    } catch(err) {
-
-        console.log(err);
-    }
+    res.json(newTask);
 });
 
 app.delete('/tasks/:id', auth, async (req, res) => {
 
     await Task.findByIdAndDelete(req.params.id);
 
+    io.emit('taskUpdated');
+
     res.json({
+
         message: "Task Deleted"
     });
 });
@@ -145,6 +184,8 @@ app.put('/tasks/status/:id', auth, async (req, res) => {
 
     await task.save();
 
+    io.emit('taskUpdated');
+
     res.json(task);
 });
 
@@ -155,98 +196,115 @@ app.put('/tasks/:id', auth, async (req, res) => {
         req.params.id,
 
         {
+
             task: req.body.task
         }
     );
 
+    io.emit('taskUpdated');
+
     res.json({
+
         message: "Task Updated"
     });
 });
 
 app.post('/signup', async (req, res) => {
 
-    try {
+    const hashedPassword = await bcrypt.hash(
 
-        const hashedPassword = await bcrypt.hash(
+        req.body.password,
 
-            req.body.password,
+        10
+    );
 
-            10
-        );
+    const user = new User({
 
-        const user = new User({
+        username: req.body.username,
 
-            username: req.body.username,
+        email: req.body.email,
 
-            email: req.body.email,
+        password: hashedPassword
+    });
 
-            password: hashedPassword
-        });
+    await user.save();
 
-        await user.save();
+    res.json({
 
-        res.json({
-            message: "User Registered Successfully"
-        });
-
-    } catch(err) {
-
-        console.log(err);
-    }
+        message: "User Registered Successfully"
+    });
 });
 
 app.post('/login', async (req, res) => {
 
-    try {
+    const user = await User.findOne({
 
-        const user = await User.findOne({
+        email: req.body.email
+    });
 
-            email: req.body.email
+    if(!user) {
+
+        return res.json({
+
+            message: "User Not Found"
         });
-
-        if(!user) {
-
-            return res.json({
-                message: "User Not Found"
-            });
-        }
-
-        const isMatch = await bcrypt.compare(
-
-            req.body.password,
-
-            user.password
-        );
-
-        if(!isMatch) {
-
-            return res.json({
-                message: "Invalid Password"
-            });
-        }
-
-        const token = jwt.sign(
-
-            { id: user._id },
-
-            "secretkey"
-        );
-
-        res.json({
-
-            message: "Login Successful",
-
-            token
-        });
-
-    } catch(err) {
-
-        console.log(err);
     }
+
+    const isMatch = await bcrypt.compare(
+
+        req.body.password,
+
+        user.password
+    );
+
+    if(!isMatch) {
+
+        return res.json({
+
+            message: "Invalid Password"
+        });
+    }
+
+    const token = jwt.sign(
+
+        {
+
+            id: user._id,
+
+            role: user.role
+        },
+
+        "secretkey"
+    );
+
+    res.json({
+
+        message: "Login Successful",
+
+        token
+    });
 });
 
-app.listen(5000, () => {
+app.get('/admin/users', auth, adminOnly, async (req, res) => {
+
+    const users = await User.find();
+
+    res.json(users);
+});
+
+app.get('/admin/tasks', auth, adminOnly, async (req, res) => {
+
+    const tasks = await Task.find();
+
+    res.json(tasks);
+});
+
+io.on('connection', (socket) => {
+
+    console.log('User Connected');
+});
+
+server.listen(5000, () => {
 
     console.log("Server running on port 5000");
 });
