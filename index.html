@@ -3,7 +3,7 @@
 
 <head>
 
-    <title>Task Manager</title>
+    <title>Advanced Task Manager</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -21,20 +21,29 @@
         }
 
         .container {
+
             background: white;
-            width: 600px;
+
+            width: 650px;
+
             padding: 30px;
+
             border-radius: 15px;
+
             box-shadow: 0px 10px 25px rgba(0,0,0,0.2);
         }
 
-        h1 {
+        h1, h2 {
+
             text-align: center;
         }
 
         .input-section {
+
             display: flex;
+
             flex-direction: column;
+
             gap: 10px;
         }
 
@@ -154,6 +163,11 @@
             background: #2c2c2c;
         }
 
+        hr {
+
+            margin: 20px 0;
+        }
+
     </style>
 
 </head>
@@ -162,7 +176,47 @@
 
 <div class="container">
 
+    <h2>Signup</h2>
+
+    <input type="text"
+           id="signupUsername"
+           placeholder="Username">
+
+    <input type="email"
+           id="signupEmail"
+           placeholder="Email">
+
+    <input type="password"
+           id="signupPassword"
+           placeholder="Password">
+
+    <button onclick="signup()">
+        Signup
+    </button>
+
+    <hr>
+
+    <h2>Login</h2>
+
+    <input type="email"
+           id="loginEmail"
+           placeholder="Email">
+
+    <input type="password"
+           id="loginPassword"
+           placeholder="Password">
+
+    <button onclick="login()">
+        Login
+    </button>
+
+    <hr>
+
     <h1>Task Manager</h1>
+
+    <button onclick="logout()">
+        Logout
+    </button>
 
     <button onclick="toggleDarkMode()">
         Dark Mode
@@ -239,13 +293,134 @@
 
 const userId = "demo_user_1";
 
+const token =
+    localStorage.getItem('token');
+
 let taskChart;
 
-async function fetchTasks() {
+async function signup() {
+
+    const username =
+        document.getElementById(
+            'signupUsername'
+        ).value;
+
+    const email =
+        document.getElementById(
+            'signupEmail'
+        ).value;
+
+    const password =
+        document.getElementById(
+            'signupPassword'
+        ).value;
 
     const response = await fetch(
 
-        `http://localhost:5000/tasks/${userId}`
+        'http://localhost:5000/signup',
+
+        {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+
+                username,
+
+                email,
+
+                password
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    alert(data.message);
+}
+
+async function login() {
+
+    const email =
+        document.getElementById(
+            'loginEmail'
+        ).value;
+
+    const password =
+        document.getElementById(
+            'loginPassword'
+        ).value;
+
+    const response = await fetch(
+
+        'http://localhost:5000/login',
+
+        {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+
+                email,
+
+                password
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if(data.token) {
+
+        localStorage.setItem(
+
+            'token',
+
+            data.token
+        );
+
+        alert("Login Successful");
+
+        location.reload();
+
+    } else {
+
+        alert(data.message);
+    }
+}
+
+function logout() {
+
+    localStorage.removeItem('token');
+
+    alert("Logged Out");
+
+    location.reload();
+}
+
+async function fetchTasks() {
+
+    if(!token) return;
+
+    const response = await fetch(
+
+        `http://localhost:5000/tasks/${userId}`,
+
+        {
+
+            headers: {
+
+                authorization: token
+            }
+        }
     );
 
     const tasks = await response.json();
@@ -438,7 +613,10 @@ async function addTask() {
             method: 'POST',
 
             headers: {
-                'Content-Type': 'application/json'
+
+                'Content-Type': 'application/json',
+
+                authorization: token
             },
 
             body: JSON.stringify({
@@ -468,7 +646,13 @@ async function deleteTask(id) {
         `http://localhost:5000/tasks/${id}`,
 
         {
-            method: 'DELETE'
+
+            method: 'DELETE',
+
+            headers: {
+
+                authorization: token
+            }
         }
     );
 
@@ -495,7 +679,10 @@ async function editTask(id, oldTask) {
                 method: 'PUT',
 
                 headers: {
-                    'Content-Type': 'application/json'
+
+                    'Content-Type': 'application/json',
+
+                    authorization: token
                 },
 
                 body: JSON.stringify({
@@ -516,7 +703,13 @@ async function updateStatus(id) {
         `http://localhost:5000/tasks/status/${id}`,
 
         {
-            method: 'PUT'
+
+            method: 'PUT',
+
+            headers: {
+
+                authorization: token
+            }
         }
     );
 

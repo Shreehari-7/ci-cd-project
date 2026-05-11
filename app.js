@@ -45,7 +45,42 @@ const Task = mongoose.model('Task', TaskSchema);
 
 const User = mongoose.model('User', UserSchema);
 
-app.get('/tasks/:userId', async (req, res) => {
+function auth(req, res, next) {
+
+    const token =
+        req.headers.authorization;
+
+    if(!token) {
+
+        return res.status(401).json({
+
+            message: "Access Denied"
+        });
+    }
+
+    try {
+
+        const verified = jwt.verify(
+
+            token,
+
+            "secretkey"
+        );
+
+        req.user = verified;
+
+        next();
+
+    } catch(err) {
+
+        res.status(400).json({
+
+            message: "Invalid Token"
+        });
+    }
+}
+
+app.get('/tasks/:userId', auth, async (req, res) => {
 
     const tasks = await Task.find({
 
@@ -55,7 +90,7 @@ app.get('/tasks/:userId', async (req, res) => {
     res.json(tasks);
 });
 
-app.post('/tasks', async (req, res) => {
+app.post('/tasks', auth, async (req, res) => {
 
     try {
 
@@ -82,7 +117,7 @@ app.post('/tasks', async (req, res) => {
     }
 });
 
-app.delete('/tasks/:id', async (req, res) => {
+app.delete('/tasks/:id', auth, async (req, res) => {
 
     await Task.findByIdAndDelete(req.params.id);
 
@@ -91,7 +126,7 @@ app.delete('/tasks/:id', async (req, res) => {
     });
 });
 
-app.put('/tasks/status/:id', async (req, res) => {
+app.put('/tasks/status/:id', auth, async (req, res) => {
 
     const task = await Task.findById(req.params.id);
 
@@ -113,7 +148,7 @@ app.put('/tasks/status/:id', async (req, res) => {
     res.json(task);
 });
 
-app.put('/tasks/:id', async (req, res) => {
+app.put('/tasks/:id', auth, async (req, res) => {
 
     await Task.findByIdAndUpdate(
 
